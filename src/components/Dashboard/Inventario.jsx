@@ -183,21 +183,34 @@ function Inventario({ businessId, userRole = 'admin' }) {
         throw new Error('El nombre del producto es requerido');
       }
 
-      if (!generatedCode) {
-        throw new Error('Error al generar el código del producto');
-      }
-
       if (formData.sale_price && formData.purchase_price) {
         if (parseFloat(formData.sale_price) < parseFloat(formData.purchase_price)) {
           throw new Error('El precio de venta no puede ser menor al precio de compra');
         }
       }
 
-      // Insertar producto con el código generado
+      // Verificar y generar un código único antes de insertar
+      let finalCode = generatedCode;
+      
+      // Verificar si el código generado ya existe
+      const { data: existingProduct } = await supabase
+        .from('products')
+        .select('id')
+        .eq('business_id', businessId)
+        .eq('code', finalCode)
+        .maybeSingle();
+
+      // Si existe, generar un nuevo código único
+      if (existingProduct) {
+        finalCode = await generateProductCode();
+        setGeneratedCode(finalCode);
+      }
+
+      // Insertar producto con el código verificado
       const productData = {
         business_id: businessId,
         name: formData.name.trim(),
-        code: generatedCode,
+        code: finalCode,
         category: formData.category.trim() || null,
         purchase_price: formData.purchase_price ? parseFloat(formData.purchase_price) : 0,
         sale_price: formData.sale_price ? parseFloat(formData.sale_price) : 0,
@@ -218,7 +231,7 @@ function Inventario({ businessId, userRole = 'admin' }) {
         throw error;
       }
 
-      setSuccess(`Producto agregado exitosamente con código: ${generatedCode}`);
+      setSuccess(`Producto agregado exitosamente con código: ${finalCode}`);
       setFormData({
         name: '',
         category: '',
