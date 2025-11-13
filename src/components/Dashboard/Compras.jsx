@@ -180,15 +180,12 @@ function Compras({ businessId }) {
     }
 
     try {
-      const totalAmount = calculateTotal();
-
-      // Insertar compra
+      // Insertar compra (el total se calculará automáticamente por trigger)
       const { data: purchase, error: purchaseError } = await supabase
         .from('purchases')
         .insert([{
           business_id: businessId,
           supplier_id: supplierId,
-          total: totalAmount,
           payment_method: paymentMethod,
           notes: notes || null
         }])
@@ -200,7 +197,7 @@ function Compras({ businessId }) {
         throw purchaseError;
       }
 
-      // Insertar detalles de compra
+      // Insertar detalles de compra (el trigger calculará el total automáticamente)
       const purchaseDetails = cart.map(item => ({
         purchase_id: purchase.id,
         product_id: item.product_id,
