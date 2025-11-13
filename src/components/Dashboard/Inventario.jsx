@@ -30,6 +30,7 @@ function Inventario({ businessId, userRole = 'admin' }) {
   const [showForm, setShowForm] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Estados para modales de confirmación
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -58,14 +59,56 @@ function Inventario({ businessId, userRole = 'admin' }) {
 
   useEffect(() => {
     // Generar código cuando se abre el formulario
-    if (showForm && businessId) {
+    if (showForm && businessId && !loading) {
       generateAndSetCode();
     }
-  }, [showForm, businessId]);
+  }, [showForm, businessId, loading]);
 
   const generateAndSetCode = async () => {
-    const code = await generateProductCode();
-    setGeneratedCode(code);
+    try {
+      // Obtener TODOS los códigos existentes
+      const { data: allProducts } = await supabase
+        .from('products')
+        .select('code')
+        .eq('business_id', businessId);
+      
+      // Crear un Set con todos los códigos existentes para búsqueda rápida
+      const existingCodes = new Set();
+      let maxNumber = 0;
+      
+      if (allProducts && allProducts.length > 0) {
+        allProducts.forEach(product => {
+          if (product.code) {
+            existingCodes.add(product.code);
+            if (product.code.startsWith('PRD-')) {
+              const match = product.code.match(/PRD-(\d+)/);
+              if (match) {
+                const num = parseInt(match[1]);
+                if (num > maxNumber) {
+                  maxNumber = num;
+                }
+              }
+            }
+          }
+        });
+      }
+      
+      // Generar código empezando desde maxNumber + 1
+      let nextNumber = maxNumber + 1;
+      let newCode = `PRD-${String(nextNumber).padStart(4, '0')}`;
+      
+      // Verificar que no exista, si existe incrementar hasta encontrar uno libre
+      while (existingCodes.has(newCode)) {
+        nextNumber++;
+        newCode = `PRD-${String(nextNumber).padStart(4, '0')}`;
+      }
+      
+      setGeneratedCode(newCode);
+    } catch (error) {
+      console.error('Error generating code:', error);
+      // Fallback con timestamp
+      setGeneratedCode(`PRD-${Date.now()}`);
+    }
   };
 
   const loadProductos = async () => {
@@ -165,68 +208,76 @@ function Inventario({ businessId, userRole = 'admin' }) {
         }
       }
 
-      // Verificar y generar un código único antes de insertar
-      let finalCode = generatedCode;
+      // Generar código único intentando inserciones hasta encontrar uno libre
+      // Como RLS bloquea SELECT, intentaremos INSERT directamente
+      let nextNumber = 1;
+      let insertSuccess = false;
+      let finalCode = '';
+      let attempts = 0;
+      const maxAttempts = 100;
       
-      // Verificar si el código generado ya existe
-      const { data: existingProduct } = await supabase
-        .from('products')
-        .select('id')
-        .eq('business_id', businessId)
-        .eq('code', finalCode)
-        .maybeSingle();
-
-      // Si existe, generar un nuevo código único
-      if (existingProduct) {
-        finalCode = await generateProductCode();
-        setGeneratedCode(finalCode);
+      while (!insertSuccess && attempts < maxAttempts) {
+        finalCode = `PRD-${String(nextNumber).padStart(4, '0')}`;
+        
+        const { data: insertedProduct, error: insertError } = await supabase
+          .from('products')
+          .insert([{
+            name: formData.name,
+            code: finalCode,
+            category: formData.category,
+            purchase_price: parseFloat(formData.purchase_price) || 0,
+            sale_price: parseFloat(formData.sale_price) || 0,
+            stock: parseInt(formData.stock) || 0,
+            min_stock: parseInt(formData.min_stock) || 0,
+            unit: formData.unit,
+            supplier_id: formData.supplier_id || null,
+            business_id: businessId,
+            is_active: true
+          }])
+          .select()
+          .single();
+        
+        if (insertError) {
+          if (insertError.code === '23505') {
+            // Código duplicado, intentar con el siguiente
+            nextNumber++;
+            attempts++;
+          } else {
+            // Error diferente, lanzar
+            throw insertError;
+          }
+        } else {
+          // Inserción exitosa
+          insertSuccess = true;
+          
+          // Actualizar la lista de productos
+          await loadProductos();
+          
+          // Cerrar modal y limpiar formulario
+          setShowForm(false);
+          setFormData({
+            name: '',
+            category: '',
+            purchase_price: '',
+            sale_price: '',
+            stock: '',
+            min_stock: '',
+            unit: 'unit',
+            supplier_id: ''
+          });
+          setGeneratedCode('');
+        }
       }
-
-      // Insertar producto con el código verificado
-      const productData = {
-        business_id: businessId,
-        name: formData.name.trim(),
-        code: finalCode,
-        category: formData.category.trim() || null,
-        purchase_price: formData.purchase_price ? parseFloat(formData.purchase_price) : 0,
-        sale_price: formData.sale_price ? parseFloat(formData.sale_price) : 0,
-        stock: formData.stock ? parseInt(formData.stock) : 0,
-        min_stock: formData.min_stock ? parseInt(formData.min_stock) : 0,
-        unit: formData.unit,
-        supplier_id: formData.supplier_id || null,
-        is_active: formData.is_active
-      };
-
-
-      const { data, error } = await supabase
-        .from('products')
-        .insert([productData])
-        .select();
-
-      if (error) {
-        throw error;
-      }
-
-      setSuccess(`Producto agregado exitosamente con código: ${finalCode}`);
-      setFormData({
-        name: '',
-        category: '',
-        purchase_price: '',
-        sale_price: '',
-        stock: '',
-        min_stock: '',
-        unit: 'unit',
-        supplier_id: '',
-        is_active: true
-      });
-      setGeneratedCode('');
-      setShowForm(false);
       
-      // Recargar lista de productos
-      await loadProductos();
+      if (!insertSuccess) {
+        alert('No se pudo generar un código único para el producto después de ' + maxAttempts + ' intentos. Por favor, contacte al administrador.');
+        return;
+      }
 
     } catch (error) {
-      setError(error.message || 'Error al agregar el producto');
+      alert('Error al crear el producto: ' + error.message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -415,16 +466,6 @@ function Inventario({ businessId, userRole = 'admin' }) {
                   <h3 className="text-xl font-bold">Agregar Nuevo Producto</h3>
                 </div>
               </div>
-              
-              {generatedCode && (
-                <div className="p-4 bg-blue-50 border-b border-blue-100">
-                  <div className="flex items-center gap-2 text-blue-800">
-                    <Tag className="w-5 h-5" />
-                    <strong>Código generado:</strong> 
-                    <code className="px-2 py-1 bg-white rounded font-mono text-sm">{generatedCode}</code>
-                  </div>
-                </div>
-              )}
               
               <form onSubmit={handleSubmit} className="p-6 space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
