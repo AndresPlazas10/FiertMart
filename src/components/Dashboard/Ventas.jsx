@@ -89,13 +89,16 @@ function Ventas({ businessId }) {
       .from('sales')
       .select(`
         *,
-        employees!inner(full_name, role, user_id)
+        employees!sales_user_id_fkey(full_name, role)
       `)
       .eq('business_id', businessId)
       .order('created_at', { ascending: false })
       .limit(50);
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error loading sales:', error);
+      throw error;
+    }
     setVentas(data || []);
   };
 
