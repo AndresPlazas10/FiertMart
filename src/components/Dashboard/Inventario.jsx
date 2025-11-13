@@ -114,59 +114,35 @@ function Inventario({ businessId, userRole = 'admin' }) {
 
   const generateProductCode = async () => {
     try {
-      // Obtener el último producto para generar un código secuencial
+      // Obtener TODOS los códigos existentes para este negocio
       const { data, error } = await supabase
         .from('products')
         .select('code')
         .eq('business_id', businessId)
-        .order('created_at', { ascending: false })
-        .limit(1);
+        .like('code', 'PRD-%');
 
       if (error && error.code !== 'PGRST116') throw error;
 
-      let newCodeNumber = 1;
-
-      if (data && data.length > 0 && data[0].code) {
-        // Extraer el número del código anterior (ej: PRD-0001 -> 1)
-        const match = data[0].code.match(/\d+$/);
-        if (match) {
-          newCodeNumber = parseInt(match[0]) + 1;
-        }
+      // Encontrar el número máximo
+      let maxNumber = 0;
+      
+      if (data && data.length > 0) {
+        data.forEach(product => {
+          const match = product.code.match(/PRD-(\d+)/);
+          if (match) {
+            const num = parseInt(match[1]);
+            if (num > maxNumber) {
+              maxNumber = num;
+            }
+          }
+        });
       }
 
-      // Generar código y verificar que no exista
-      let code = `PRD-${String(newCodeNumber).padStart(4, '0')}`;
-      let codeExists = true;
-      let attempts = 0;
-      const maxAttempts = 100;
-
-      while (codeExists && attempts < maxAttempts) {
-        // Verificar si el código ya existe
-        const { data: existingProduct } = await supabase
-          .from('products')
-          .select('id')
-          .eq('business_id', businessId)
-          .eq('code', code)
-          .maybeSingle();
-
-        if (!existingProduct) {
-          // Código disponible
-          codeExists = false;
-        } else {
-          // Código existe, incrementar y probar de nuevo
-          newCodeNumber++;
-          code = `PRD-${String(newCodeNumber).padStart(4, '0')}`;
-          attempts++;
-        }
-      }
-
-      if (attempts >= maxAttempts) {
-        // Si no encuentra código disponible después de 100 intentos, usar timestamp
-        return `PRD-${Date.now()}`;
-      }
-
-      return code;
+      // Generar el siguiente número
+      const nextNumber = maxNumber + 1;
+      return `PRD-${String(nextNumber).padStart(4, '0')}`;
     } catch (error) {
+      console.error('Error generating code:', error);
       // Si falla, usar timestamp como fallback
       return `PRD-${Date.now()}`;
     }
