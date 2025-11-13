@@ -77,7 +77,8 @@ function EmployeeDashboard() {
           .insert([{
             user_id: user.id,
             business_id: invitation.business_id,
-            role: invitation.role
+            role: invitation.role,
+            full_name: invitation.full_name
           }])
           .select()
           .single();

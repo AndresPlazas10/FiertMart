@@ -109,6 +109,21 @@ function Register() {
 
       if (error) throw error;
 
+      // Crear registro del owner en la tabla employees
+      const { error: employeeError } = await supabase
+        .from('employees')
+        .insert([{
+          user_id: user.id,
+          business_id: data[0].id,
+          role: 'owner',
+          full_name: businessData.name.trim() + ' (Propietario)'
+        }]);
+
+      if (employeeError) {
+        console.error('Error creating owner employee record:', employeeError);
+        // No bloqueamos el registro si falla esto
+      }
+
       setSuccess(true);
       setFormData({
         name: '',

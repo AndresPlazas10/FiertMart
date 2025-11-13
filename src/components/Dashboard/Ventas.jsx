@@ -85,43 +85,67 @@ function Ventas({ businessId }) {
   };
 
   const loadVentas = async () => {
-    // Primero cargamos las ventas
-    const { data: salesData, error: salesError } = await supabase
-      .from('sales')
-      .select('*')
-      .eq('business_id', businessId)
-      .order('created_at', { ascending: false })
-      .limit(50);
+    try {
+      // Obtener usuario autenticado
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      // Verificar si el usuario es el dueño del negocio
+      const { data: business } = await supabase
+        .from('businesses')
+        .select('created_by, name')
+        .eq('id', businessId)
+        .single();
 
-    if (salesError) {
-      console.error('Error loading sales:', salesError);
-      throw salesError;
+      // Cargar ventas
+      const { data: salesData, error: salesError } = await supabase
+        .from('sales')
+        .select('*')
+        .eq('business_id', businessId)
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (salesError) throw salesError;
+
+      // Cargar empleados con nombres
+      const { data: employeesData } = await supabase
+        .from('employees')
+        .select('user_id, full_name, role')
+        .eq('business_id', businessId);
+
+      // Crear mapa de user_id -> employee
+      const employeeMap = {};
+      employeesData?.forEach(emp => {
+        employeeMap[emp.user_id] = {
+          full_name: emp.full_name || 'Usuario',
+          role: emp.role
+        };
+      });
+
+      // Combinar datos - si el user_id es el owner, marcarlo como Administrador
+      const salesWithEmployees = salesData?.map(sale => {
+        // Si la venta fue hecha por el dueño del negocio
+        if (sale.user_id === business?.created_by) {
+          return {
+            ...sale,
+            employees: {
+              full_name: 'Administrador',
+              role: 'owner'
+            }
+          };
+        }
+        
+        // Si no, buscar en el mapa de empleados
+        return {
+          ...sale,
+          employees: employeeMap[sale.user_id] || null
+        };
+      }) || [];
+
+      setVentas(salesWithEmployees);
+    } catch (error) {
+      console.error('Error loading ventas:', error);
+      setVentas([]);
     }
-
-    // Luego cargamos los empleados del negocio
-    const { data: employeesData, error: employeesError } = await supabase
-      .from('employees')
-      .select('user_id, full_name, role')
-      .eq('business_id', businessId);
-
-    if (employeesError) {
-      console.error('Error loading employees:', employeesError);
-      throw employeesError;
-    }
-
-    // Crear un mapa de user_id -> employee
-    const employeeMap = {};
-    employeesData?.forEach(emp => {
-      employeeMap[emp.user_id] = emp;
-    });
-
-    // Combinar los datos
-    const salesWithEmployees = salesData?.map(sale => ({
-      ...sale,
-      employees: employeeMap[sale.user_id] || null
-    })) || [];
-
-    setVentas(salesWithEmployees);
   };
 
   const loadProductos = async () => {
@@ -961,12 +985,13 @@ function Ventas({ businessId }) {
                         className="border-b border-gray-100 hover:bg-gradient-to-r hover:from-[#C4DFE6]/20 hover:to-transparent transition-all duration-300"
                       >
                         <td className="px-6 py-4 text-sm text-gray-700">
-                          {new Date(venta.created_at).toLocaleString('es-ES', {
+                          {new Date(venta.created_at + 'Z').toLocaleString('es-CO', {
                             year: 'numeric',
                             month: 'short',
                             day: 'numeric',
                             hour: '2-digit',
-                            minute: '2-digit'
+                            minute: '2-digit',
+                            timeZone: 'America/Bogota'
                           })}
                         </td>
                         <td className="px-6 py-4">
@@ -1059,7 +1084,7 @@ function Ventas({ businessId }) {
                     <div>
                       <h2 className="text-2xl font-bold">Generar Factura Electrónica</h2>
                       <p className="text-blue-100 mt-1">
-                        Venta del {new Date(selectedSale.created_at).toLocaleDateString('es-ES')} por {formatPrice(selectedSale.total)}
+                        Venta del {new Date(selectedSale.created_at + 'Z').toLocaleDateString('es-CO', { timeZone: 'America/Bogota' })} por {formatPrice(selectedSale.total)}
                       </p>
                     </div>
                   </div>
