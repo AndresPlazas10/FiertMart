@@ -85,21 +85,43 @@ function Ventas({ businessId }) {
   };
 
   const loadVentas = async () => {
-    const { data, error } = await supabase
+    // Primero cargamos las ventas
+    const { data: salesData, error: salesError } = await supabase
       .from('sales')
-      .select(`
-        *,
-        employees!sales_user_id_fkey(full_name, role)
-      `)
+      .select('*')
       .eq('business_id', businessId)
       .order('created_at', { ascending: false })
       .limit(50);
 
-    if (error) {
-      console.error('Error loading sales:', error);
-      throw error;
+    if (salesError) {
+      console.error('Error loading sales:', salesError);
+      throw salesError;
     }
-    setVentas(data || []);
+
+    // Luego cargamos los empleados del negocio
+    const { data: employeesData, error: employeesError } = await supabase
+      .from('employees')
+      .select('user_id, full_name, role')
+      .eq('business_id', businessId);
+
+    if (employeesError) {
+      console.error('Error loading employees:', employeesError);
+      throw employeesError;
+    }
+
+    // Crear un mapa de user_id -> employee
+    const employeeMap = {};
+    employeesData?.forEach(emp => {
+      employeeMap[emp.user_id] = emp;
+    });
+
+    // Combinar los datos
+    const salesWithEmployees = salesData?.map(sale => ({
+      ...sale,
+      employees: employeeMap[sale.user_id] || null
+    })) || [];
+
+    setVentas(salesWithEmployees);
   };
 
   const loadProductos = async () => {
