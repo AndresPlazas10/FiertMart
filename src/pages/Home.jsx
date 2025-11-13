@@ -304,30 +304,30 @@ function Home() {
               viewport={{ once: true }}
               className="relative"
             >
-              <Card className="p-8 bg-gradient-to-br from-primary-900 to-secondary-800 text-white">
+              <Card className="p-8">
                 <div className="space-y-6">
                   <div className="flex items-center gap-4">
-                    <div className="w-16 h-16 rounded-2xl bg-white/10 flex items-center justify-center">
-                      <BarChart3 className="w-8 h-8" />
+                    <div className="w-16 h-16 rounded-2xl bg-accent-100 flex items-center justify-center">
+                      <BarChart3 className="w-8 h-8 text-accent-600" />
                     </div>
                   </div>
-                  <div className="h-px bg-white/20"></div>
+                  <div className="h-px bg-primary-200"></div>
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
-                      <Users className="w-5 h-5" />
+                    <div className="w-10 h-10 rounded-full bg-accent-100 flex items-center justify-center">
+                      <Users className="w-5 h-5 text-accent-600" />
                     </div>
                     <div>
-                      <div className="text-sm opacity-80">Gestión de Equipo</div>
-                      <div className="font-semibold">Control completo</div>
+                      <div className="text-sm text-primary-600">Gestión de Equipo</div>
+                      <div className="font-semibold text-primary-900">Control completo</div>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
-                      <Package className="w-5 h-5" />
+                    <div className="w-10 h-10 rounded-full bg-accent-100 flex items-center justify-center">
+                      <Package className="w-5 h-5 text-accent-600" />
                     </div>
                     <div>
-                      <div className="text-sm opacity-80">Inventario</div>
-                      <div className="font-semibold">En tiempo real</div>
+                      <div className="text-sm text-primary-600">Inventario</div>
+                      <div className="font-semibold text-primary-900">En tiempo real</div>
                     </div>
                   </div>
                 </div>
