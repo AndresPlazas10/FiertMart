@@ -54,8 +54,12 @@ function EmployeeAccess() {
         throw userError2;
       }
 
-      // Redirigir directamente al dashboard de empleado
-      window.location.href = '/employee-dashboard';
+      // Redirigir según el rol: admin al Dashboard principal, employee al EmployeeDashboard
+      if (invitation.role === 'admin') {
+        window.location.href = '/dashboard';
+      } else {
+        window.location.href = '/employee-dashboard';
+      }
 
     } catch (err) {
       setError('Error al procesar la invitación: ' + err.message);
