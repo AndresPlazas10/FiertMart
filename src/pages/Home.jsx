@@ -215,7 +215,7 @@ function Home() {
             </motion.div>
 
             <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-primary-900 mb-6 animate-fade-in leading-tight">
-              Gestiona tu negocio con{" "}
+              Gestiona tu negocio con{" Stockly"}
               <span className="bg-gradient-to-r from-accent-500 to-secondary-500 bg-clip-text text-transparent">
                 Stockly
               </span>

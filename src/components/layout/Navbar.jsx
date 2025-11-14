@@ -62,28 +62,28 @@ export function Navbar({ userName = "Admin", userEmail = "admin@stockly.com", us
       animate={{ y: 0, opacity: 1 }}
       className="sticky top-0 z-30 bg-white/80 backdrop-blur-xl border-b border-gray-200 dark:bg-primary-900/80 dark:border-primary-700"
     >
-      <div className="flex items-center justify-between px-6 py-4">
+      <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4">
         {/* Left Section - Welcome Message */}
-        <div className="flex-1">
-          <h2 className="text-lg font-bold" style={{ color: '#000000' }}>
+        <div className="flex-1 ml-12 lg:ml-0">
+          <h2 className="text-base sm:text-lg font-bold truncate" style={{ color: '#000000' }}>
             Bienvenido, {userName}
           </h2>
-          <p className="text-sm font-semibold" style={{ color: '#1f2937' }}>
+          <p className="text-xs sm:text-sm font-semibold" style={{ color: '#1f2937' }}>
             {userRole}
           </p>
         </div>
 
         {/* Right Section */}
-        <div className="flex items-center gap-4">{/* Notifications */}
+        <div className="flex items-center gap-2 sm:gap-4">{/* Notifications */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="relative p-2 rounded-2xl hover:bg-accent/10 transition-colors group">
-                <Bell className="w-5 h-5 text-gray-600 group-hover:text-accent dark:text-gray-300" />
+                <Bell className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 group-hover:text-accent dark:text-gray-300" />
                 {unreadCount > 0 && (
                   <motion.span
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
-                    className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-medium"
+                    className="absolute -top-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 bg-red-500 text-white text-[10px] sm:text-xs rounded-full flex items-center justify-center font-medium"
                   >
                     {unreadCount}
                   </motion.span>

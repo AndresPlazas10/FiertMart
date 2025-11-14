@@ -112,13 +112,7 @@ export function Sidebar({ activeSection, onSectionChange, businessName, business
           </div>
           
           {!isCollapsed && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.2 }}
-              className="flex-1 text-center w-full"
-            >
+            <div className="flex-1 text-center w-full transition-opacity duration-150">
               <h1 className="text-xl font-bold text-primary">
                 {businessName || 'Stockly'}
               </h1>
@@ -142,7 +136,7 @@ export function Sidebar({ activeSection, onSectionChange, businessName, business
                   </button>
                 )}
               </div>
-            </motion.div>
+            </div>
           )}
         </motion.div>
       </div>
@@ -158,7 +152,7 @@ export function Sidebar({ activeSection, onSectionChange, businessName, business
               key={item.section}
               onClick={() => handleSectionClick(item.section)}
               className={cn(
-                "w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-200 group relative overflow-hidden",
+                "w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-150 group relative overflow-hidden",
                 isActive
                   ? "bg-primary text-white shadow-md"
                   : "text-gray-800 hover:bg-accent/10 hover:text-primary dark:text-gray-300"
@@ -170,34 +164,31 @@ export function Sidebar({ activeSection, onSectionChange, businessName, business
                   className="absolute inset-0 bg-gradient-to-r from-accent/0 via-accent/5 to-accent/0"
                   initial={{ x: '-100%' }}
                   whileHover={{ x: '100%' }}
-                  transition={{ duration: 0.5 }}
+                  transition={{ duration: 0.3, ease: "easeOut" }}
                 />
               )}
 
               <Icon className={cn(
-                "w-5 h-5 transition-transform group-hover:scale-110",
+                "w-5 h-5 transition-transform duration-150 group-hover:scale-110",
                 isActive ? "text-white" : "text-gray-700"
               )} />
               
               {!isCollapsed && (
-                <motion.span
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -10 }}
+                <span
                   className={cn(
-                    "font-medium text-sm relative z-10",
+                    "font-medium text-sm relative z-10 transition-opacity duration-150",
                     isActive ? "text-white" : "text-gray-800"
                   )}
                 >
                   {item.label}
-                </motion.span>
+                </span>
               )}
 
               {isActive && (
                 <motion.div
                   layoutId="activeIndicator"
                   className="absolute right-2 w-1.5 h-1.5 rounded-full bg-white"
-                  transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                  transition={{ duration: 0.2, ease: "easeInOut" }}
                 />
               )}
             </button>
@@ -230,9 +221,9 @@ export function Sidebar({ activeSection, onSectionChange, businessName, business
       {/* Mobile Menu Button */}
       <button
         onClick={toggleMobile}
-        className="lg:hidden fixed top-4 left-4 z-50 p-2 rounded-2xl bg-white shadow-md text-primary"
+        className="lg:hidden fixed top-3 left-3 z-50 p-2.5 rounded-xl bg-white shadow-lg border border-primary/10 text-primary hover:bg-primary hover:text-white transition-colors"
       >
-        {isMobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+        {isMobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
       </button>
 
       {/* Desktop Sidebar */}
@@ -245,7 +236,7 @@ export function Sidebar({ activeSection, onSectionChange, businessName, business
       </motion.aside>
 
       {/* Mobile Sidebar */}
-      <AnimatePresence>
+      <AnimatePresence mode="wait">
         {isMobileOpen && (
           <>
             {/* Overlay */}
@@ -253,8 +244,9 @@ export function Sidebar({ activeSection, onSectionChange, businessName, business
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
+              transition={{ duration: 0.2, ease: "easeInOut" }}
               onClick={toggleMobile}
-              className="lg:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
+              className="lg:hidden fixed inset-0 bg-black/60 z-40"
             />
 
             {/* Sidebar */}
@@ -262,7 +254,7 @@ export function Sidebar({ activeSection, onSectionChange, businessName, business
               initial={{ x: -280 }}
               animate={{ x: 0 }}
               exit={{ x: -280 }}
-              transition={{ type: "spring", damping: 25 }}
+              transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
               className="lg:hidden fixed left-0 top-0 bottom-0 w-72 bg-white shadow-2xl z-50 dark:bg-primary-900"
             >
               <SidebarContent />
