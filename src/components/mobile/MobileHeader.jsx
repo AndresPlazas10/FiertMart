@@ -1,0 +1,66 @@
+import { Menu, Bell, Search } from 'lucide-react';
+import { motion } from 'framer-motion';
+
+/**
+ * Header optimizado para móvil
+ * - Altura compacta (56px)
+ * - Logo centrado o a la izquierda
+ * - Acciones rápidas a la derecha
+ * - Hamburger menu a la izquierda
+ */
+export function MobileHeader({ 
+  onMenuClick, 
+  businessName = "Stockly",
+  showSearch = false,
+  showNotifications = false,
+  onSearchClick,
+  onNotificationClick 
+}) {
+  return (
+    <header className="fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-200 sm:hidden">
+      <div className="flex items-center justify-between h-14 px-4">
+        {/* Botón de menú */}
+        <motion.button
+          whileTap={{ scale: 0.95 }}
+          onClick={onMenuClick}
+          className="p-2 -ml-2 rounded-lg active:bg-gray-100 transition-colors"
+          aria-label="Abrir menú"
+        >
+          <Menu size={24} className="text-gray-700" />
+        </motion.button>
+
+        {/* Logo/Nombre del negocio */}
+        <h1 className="text-lg font-bold text-[#003B46] truncate flex-1 text-center px-2">
+          {businessName}
+        </h1>
+
+        {/* Acciones rápidas */}
+        <div className="flex items-center gap-1">
+          {showSearch && (
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={onSearchClick}
+              className="p-2 rounded-lg active:bg-gray-100 transition-colors"
+              aria-label="Buscar"
+            >
+              <Search size={20} className="text-gray-600" />
+            </motion.button>
+          )}
+          
+          {showNotifications && (
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={onNotificationClick}
+              className="p-2 rounded-lg active:bg-gray-100 transition-colors relative"
+              aria-label="Notificaciones"
+            >
+              <Bell size={20} className="text-gray-600" />
+              {/* Badge opcional para notificaciones pendientes */}
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
+            </motion.button>
+          )}
+        </div>
+      </div>
+    </header>
+  );
+}

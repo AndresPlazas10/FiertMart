@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Sidebar } from './Sidebar';
 import { Navbar } from './Navbar';
 import { motion } from 'framer-motion';
+import { MobileBottomNav, MobileHeader, MobileDrawer } from '../mobile';
+import { useViewport } from '../../hooks/useViewport';
 
 export function DashboardLayout({ 
   children, 
@@ -16,6 +18,51 @@ export function DashboardLayout({
   activeSection,
   onSectionChange
 }) {
+  const { isMobile } = useViewport();
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  // En móvil, usamos navegación inferior
+  if (isMobile) {
+    return (
+      <div className="flex flex-col h-screen overflow-hidden bg-gray-50">
+        {/* Header móvil */}
+        <MobileHeader
+          businessName={businessName}
+          onMenuClick={() => setDrawerOpen(true)}
+          showSearch={false}
+          showNotifications={false}
+        />
+
+        {/* Drawer lateral */}
+        <MobileDrawer
+          isOpen={drawerOpen}
+          onClose={() => setDrawerOpen(false)}
+          currentView={activeSection}
+          onNavigate={onSectionChange}
+          userName={userName}
+          businessName={businessName}
+        />
+
+        {/* Contenido principal con padding para header y bottom nav */}
+        <motion.main
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3 }}
+          className="flex-1 overflow-y-auto pt-14 pb-16 px-4"
+        >
+          {children}
+        </motion.main>
+
+        {/* Navegación inferior */}
+        <MobileBottomNav
+          currentView={activeSection}
+          onNavigate={onSectionChange}
+        />
+      </div>
+    );
+  }
+
+  // Desktop: Layout original
   return (
     <div className="flex h-screen overflow-hidden bg-background-light dark:bg-primary-900">
       {/* Sidebar */}
