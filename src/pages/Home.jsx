@@ -299,11 +299,7 @@ function Home() {
       <section id="benefits" className="py-20 px-4 sm:px-6 lg:px-8">
         <div className="container mx-auto">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-            >
+            <div>
               <h2 className="text-display text-primary-900 mb-6">
                 ¿Por qué elegir Stockly?
               </h2>
@@ -313,29 +309,20 @@ function Home() {
               </p>
               <div className="space-y-4">
                 {benefits.map((benefit, index) => (
-                  <motion.div
+                  <div
                     key={index}
-                    initial={{ opacity: 0, x: -20 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: index * 0.1 }}
                     className="flex items-center gap-3"
                   >
                     <div className="w-6 h-6 rounded-full bg-accent-500 flex items-center justify-center flex-shrink-0">
                       <Check className="w-4 h-4 text-white" />
                     </div>
                     <span className="text-primary-700">{benefit}</span>
-                  </motion.div>
+                  </div>
                 ))}
               </div>
-            </motion.div>
+            </div>
 
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              className="relative"
-            >
+            <div className="relative">
               <Card className="p-8">
                 <div className="space-y-6">
                   <div className="flex items-center gap-4">
@@ -370,21 +357,15 @@ function Home() {
                   </div>
                 </div>
               </Card>
-            </motion.div>
+            </div>
           </div>
         </div>
       </section>
 
       {/* CTA Section */}
       <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-primary-900 to-secondary-800 text-white relative overflow-hidden">
-        <div className="absolute inset-0 bg-dots-pattern opacity-20"></div>
         <div className="container mx-auto text-center relative z-10">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="max-w-3xl mx-auto"
-          >
+          <div className="max-w-3xl mx-auto">
             <h2 className="text-display mb-6">
               Comienza a gestionar tu negocio hoy
             </h2>
@@ -410,7 +391,7 @@ function Home() {
                 Iniciar Sesión
               </Button>
             </div>
-          </motion.div>
+          </div>
         </div>
       </section>
 
