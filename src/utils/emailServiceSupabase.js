@@ -1,9 +1,16 @@
 import { supabase } from '../supabase/Client';
 import emailjs from '@emailjs/browser';
+import { 
+  validateEmail, 
+  shouldSendEmail, 
+  logEmailAttempt,
+  normalizeEmail 
+} from './emailValidation';
 
 /**
  * Envía una factura electrónica por email usando EmailJS
  * Funciona tanto para administradores como empleados
+ * ✅ Incluye validación robusta para prevenir bounced emails
  * 
  * @param {Object} params - Parámetros del email
  * @param {string} params.email - Email del destinatario
@@ -21,37 +28,92 @@ export const sendInvoiceEmail = async ({
   items = []
 }) => {
   try {
-    // Verificar si EmailJS está configurado
+    // ✅ PASO 1: Validar el email antes de intentar enviar
+    const validation = validateEmail(email);
+    
+    if (!validation.valid) {
+      console.warn('⚠️ Email inválido:', validation.error);
+      logEmailAttempt({
+        email,
+        type: 'invoice',
+        success: false,
+        error: validation.error,
+        skipped: true
+      });
+      
+      return {
+        success: false,
+        error: validation.error,
+        message: `No se pudo enviar el email: ${validation.error}`
+      };
+    }
+
+    // ✅ PASO 2: Decidir si enviar email real o de testing
+    const sendDecision = shouldSendEmail(email);
+    
+    if (!sendDecision.shouldSend) {
+      console.warn('⚠️ Email no enviado:', sendDecision.reason);
+      logEmailAttempt({
+        email,
+        type: 'invoice',
+        success: false,
+        error: sendDecision.reason,
+        skipped: true
+      });
+      
+      return {
+        success: false,
+        error: sendDecision.reason,
+        message: `Email no enviado: ${sendDecision.reason}`
+      };
+    }
+
+    // Usar email de testing en desarrollo, real en producción
+    const targetEmail = sendDecision.testEmail || sendDecision.email;
+    const isTestMode = !!sendDecision.testEmail;
+
+    // ✅ PASO 3: Verificar si EmailJS está configurado
     const emailJSConfigured = import.meta.env.VITE_EMAILJS_SERVICE_ID && 
                               import.meta.env.VITE_EMAILJS_TEMPLATE_ID && 
                               import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
 
     if (!emailJSConfigured) {
       console.warn('⚠️ EmailJS no está configurado. Usando modo demo.');
+      logEmailAttempt({
+        email: targetEmail,
+        type: 'invoice',
+        success: true,
+        error: null,
+        skipped: true
+      });
+      
       return {
         success: true,
         demo: true,
+        testMode: isTestMode,
         message: 'EmailJS no configurado. Configura las variables de entorno VITE_EMAILJS_*'
       };
     }
 
-    // Formatear items para el email
+    // ✅ PASO 4: Formatear items para el email
     const itemsText = items.map(item => 
       `- ${item.product_name || item.name} x ${item.quantity} = $${(item.quantity * item.unit_price).toLocaleString('es-CO')}`
     ).join('\n');
 
-    // Preparar template params para EmailJS
+    // ✅ PASO 5: Preparar template params para EmailJS con email validado
     const templateParams = {
-      to_email: email,
+      to_email: targetEmail, // ✅ Usar email validado (test o real)
       customer_name: customerName,
       invoice_number: invoiceNumber,
       total: `$${total.toLocaleString('es-CO')}`,
       items_list: itemsText || 'Ver factura adjunta',
       business_name: 'Stockly',
-      message: `Hola ${customerName},\n\nAdjuntamos tu factura ${invoiceNumber} por un valor de $${total.toLocaleString('es-CO')}.\n\nProductos:\n${itemsText}\n\nGracias por tu compra.`
+      message: isTestMode 
+        ? `[TEST MODE] Email original: ${email}\n\nHola ${customerName},\n\nAdjuntamos tu factura ${invoiceNumber} por un valor de $${total.toLocaleString('es-CO')}.\n\nProductos:\n${itemsText}\n\nGracias por tu compra.`
+        : `Hola ${customerName},\n\nAdjuntamos tu factura ${invoiceNumber} por un valor de $${total.toLocaleString('es-CO')}.\n\nProductos:\n${itemsText}\n\nGracias por tu compra.`
     };
 
-    // Enviar email usando EmailJS
+    // ✅ PASO 6: Enviar email usando EmailJS
     const response = await emailjs.send(
       import.meta.env.VITE_EMAILJS_SERVICE_ID,
       import.meta.env.VITE_EMAILJS_TEMPLATE_ID,
@@ -59,23 +121,47 @@ export const sendInvoiceEmail = async ({
       import.meta.env.VITE_EMAILJS_PUBLIC_KEY
     );
 
-    console.log('✅ Email enviado exitosamente:', response);
+    // ✅ PASO 7: Log exitoso
+    const successMessage = isTestMode 
+      ? `Email de testing enviado a ${targetEmail} (original: ${email})`
+      : `Email enviado exitosamente a ${targetEmail}`;
+    
+    console.log('✅', successMessage, response);
+    
+    logEmailAttempt({
+      email: targetEmail,
+      type: 'invoice',
+      success: true,
+      error: null
+    });
     
     return {
       success: true,
       demo: false,
-      data: response
+      testMode: isTestMode,
+      targetEmail,
+      originalEmail: email,
+      data: response,
+      message: successMessage
     };
 
   } catch (error) {
     console.error('❌ Error al enviar email:', error);
     
+    // ✅ Log del error
+    logEmailAttempt({
+      email,
+      type: 'invoice',
+      success: false,
+      error: error.message || error
+    });
+    
     // Si falla, retornar modo demo para no romper la aplicación
     return {
-      success: true,
+      success: false, // ✅ Cambiado a false para reflejar el fallo real
       demo: true,
       error: error.message,
-      message: 'Factura creada pero email no enviado. Verifica la configuración de EmailJS.'
+      message: 'Error al enviar email. Verifica la configuración de EmailJS y que el email sea válido.'
     };
   }
 };
